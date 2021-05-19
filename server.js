@@ -5,6 +5,7 @@ const app = express()
 const cors = require('cors')
 const mongoose = require('mongoose')
 const bodyParser = require('body-parser')
+const { json } = require('express')
 require('dotenv').config()
 
 app.use(cors())
@@ -36,7 +37,7 @@ let userSchema = new mongoose.Schema({
 let Session = mongoose.model('Session', exerciseSessionSchema)
 let User = mongoose.model('User', userSchema)
 
-app.post('/api/exercise/new-user', bodyParser.urlencoded({ extended: false }), (request, response) => {
+app.post('/api/users', bodyParser.urlencoded({ extended: false }), (request, response) => {
   let newUser = new User({username: request.body.username})
   newUser.save((error, savedUser) => {
     if(!error){
@@ -48,7 +49,7 @@ app.post('/api/exercise/new-user', bodyParser.urlencoded({ extended: false }), (
   })
 })
 
-app.get('/api/exercise/users', (request, response) => {
+app.get('/api/users', (request, response) => {
   
   User.find({}, (error, arrayOfUsers) => {
     if(!error){
@@ -58,8 +59,15 @@ app.get('/api/exercise/users', (request, response) => {
   
 })
 
-app.post('/api/exercise/add', bodyParser.urlencoded({ extended: false }) , (request, response) => {
-  
+//post to /api/users/:id/exercises
+//app.post('/api/users/:id/exercises'), bodyParser.urlencoded({ extended: false }) , (request, response) => {
+//}
+
+//app.post('/api/exercise/add', bodyParser.urlencoded({ extended: false }) , (request, response) => {
+///api/users/:id/exercises  
+app.post('/api/users/:id/exercises', bodyParser.urlencoded({ extended: false }) , (request, response) => {
+  let id =request.params.id;
+
   let newSession = new Session({
     description: request.body.description,
     duration: parseInt(request.body.duration),
@@ -71,7 +79,8 @@ app.post('/api/exercise/add', bodyParser.urlencoded({ extended: false }) , (requ
   }
   
   User.findByIdAndUpdate(
-    request.body.userId,
+    //request.body.userId,
+    id,
     {$push : {log: newSession}},
     {new: true},
     (error, updatedUser)=> {
@@ -83,14 +92,17 @@ app.post('/api/exercise/add', bodyParser.urlencoded({ extended: false }) , (requ
         responseObject['description'] = newSession.description
         responseObject['duration'] = newSession.duration
         response.json(responseObject)
+      } else {
+        response.json(error);
       }
     }
   )
 })
 
-app.get('/api/exercise/log', (request, response) => {
-  
-  User.findById(request.query.userId, (error, result) => {
+app.get('/api/users/:id/logs', (request, response) => {
+  let id = request.params.id;
+  //User.findById(request.query.userId, (error, result) => {
+  User.findById(id, (error, result) => {  
     if(!error){
       let responseObject = result
       
